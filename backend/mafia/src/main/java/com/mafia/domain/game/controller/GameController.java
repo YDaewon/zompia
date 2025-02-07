@@ -69,14 +69,14 @@ public class GameController {
     @PostMapping("/{roomId}/vote")
     @Operation(summary = "Vote", description = "유저 ID와 타겟 ID를 받아 투표합니다.(투표 시간에만 가능합니다.")
     public ResponseEntity<BaseResponse<String>> vote(@PathVariable Long roomId,
-        @RequestParam Long playerNo, @RequestParam Integer targetNo) {
+        @AuthenticationPrincipal AuthenticatedUser detail, @RequestParam Integer targetNo) {
         gameService.validatePhase(roomId, GamePhase.DAY_VOTE);
-        gameService.vote(roomId, playerNo, targetNo);
+        gameService.vote(roomId, detail.getMemberId(), targetNo);
         return ResponseEntity.ok(new BaseResponse<>(
-            "Player " + playerNo + " voted for " + targetNo + " in Room " + roomId + "."));
+            "Player " + detail.getMemberId() + " voted for " + targetNo + " in Room " + roomId + "."));
     }
 
-    @PostMapping("/{roomId}/finalvote")
+    @GetMapping("/{roomId}/finalvote")
     @Operation(summary = "Vote", description = "각유저의 투표 대상 처형을 최종 투표합니다.(마지막 투표 시간에만 가능합니다.")
     public ResponseEntity<BaseResponse<String>> vote(@PathVariable Long roomId) {
         gameService.validatePhase(roomId, GamePhase.DAY_FINAL_VOTE);
@@ -113,9 +113,9 @@ public class GameController {
     @PostMapping("/{roomId}/target/set")
     @Operation(summary = "set target player", description = "타겟을 설정합니다.(밤 페이즈)")
     public ResponseEntity<BaseResponse<String>> setTarget(@PathVariable Long roomId,
-        @RequestParam Long playerNo, @RequestParam Integer targetNo) {
+        @AuthenticationPrincipal AuthenticatedUser detail, @RequestParam Integer targetNo) {
         gameService.validatePhase(roomId, GamePhase.NIGHT_ACTION);
-        gameService.setTarget(roomId, playerNo, targetNo);
+        gameService.setTarget(roomId, detail.getMemberId(), targetNo);
         return ResponseEntity.ok(
             new BaseResponse<>("User " + targetNo + " set as target in Room " + roomId + "."));
     }

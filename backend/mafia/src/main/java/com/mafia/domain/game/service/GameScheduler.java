@@ -5,6 +5,8 @@ import static com.mafia.global.common.model.dto.BaseResponseStatus.UNKNOWN_PHASE
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mafia.domain.game.event.GamePublisher;
+import com.mafia.domain.game.model.dto.GameEndEvent;
+import com.mafia.domain.game.model.dto.GameStartEvent;
 import com.mafia.domain.game.model.game.Game;
 import com.mafia.domain.game.model.game.GamePhase;
 import com.mafia.domain.game.repository.GameRepository;
@@ -18,57 +20,80 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Lazy;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
+/**
+ * 게임의 진행을 관리하는 스케줄러 서비스 클래스.
+ * 게임의 타이머를 관리하며 페이즈 전환을 수행한다.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class GameScheduler {
 
-    @Lazy
     private final GameSeqRepository gameSeqRepository;
     private final GameRepository gameRepository;
     private final GamePublisher gamePublisher;
     private final ObjectMapper objectMapper;
 
-    // 게임별 개별 스케줄러 관리
+    /**
+     * 게임별 개별 스케줄러를 관리하는 맵.
+     */
     private final Map<Long, ScheduledFuture<?>> gameSchedulers = new ConcurrentHashMap<>();
+
+    /**
+     * 스케줄링을 수행하는 스레드 풀.
+     */
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(8);
     // CPU 코어 개수를 모르겠네요...
 
     /**
-     * 특정 게임(roomId)에 대한 스케줄러 시작
+     * 특정 게임(roomId)에 대한 스케줄러를 시작한다.
+     *
+     * @param event 게임 시작 이벤트 (GameStartEvent)
      */
-    public void startGameScheduler(long roomId) {
-        if (gameSchedulers.containsKey(roomId)) {
-            log.info("[GameScheduler] 게임 " + roomId + "의 스케줄러가 이미 실행 중입니다.");
+    @EventListener
+    public void startGameScheduler(GameStartEvent event) {
+        Long gameId = event.getGameId();
+        if (gameSchedulers.containsKey(gameId)) {
+            log.info("[GameScheduler] 게임 " + gameId + "의 스케줄러가 이미 실행 중입니다.");
             return;
         }
 
         ScheduledFuture<?> scheduledTask = scheduler.scheduleAtFixedRate(() -> {
             try {
-                processTimers(roomId);
+                processTimers(gameId);
             } catch (JsonProcessingException e) {
                 e.printStackTrace();
             }
         }, 0, 1, TimeUnit.SECONDS);
 
-        gameSchedulers.put(roomId, scheduledTask);
-        System.out.println("[GameScheduler] 게임 " + roomId + "의 스케줄러가 시작되었습니다.");
+        gameSchedulers.put(gameId, scheduledTask);
+        System.out.println("[GameScheduler] 게임 " + gameId + "의 스케줄러가 시작되었습니다.");
     }
 
     /**
-     * 특정 게임(roomId)에 대한 스케줄러 종료
+     * 특정 게임(roomId)에 대한 스케줄러를 종료한다.
+     *
+     * @param event 게임 종료 이벤트 (GameEndEvent)
      */
-    public void stopGameScheduler(long roomId) {
-        ScheduledFuture<?> scheduledTask = gameSchedulers.remove(roomId);
+    @EventListener
+    public void stopGameScheduler(GameEndEvent event) {
+        Long gameId = event.getGameId();
+        ScheduledFuture<?> scheduledTask = gameSchedulers.remove(gameId);
         if (scheduledTask != null) {
             scheduledTask.cancel(true);
-            System.out.println("[GameScheduler] 게임 " + roomId + "의 스케줄러가 종료되었습니다.");
+            System.out.println("[GameScheduler] 게임 " + gameId + "의 스케줄러가 종료되었습니다.");
         }
     }
 
+    /**
+     * 특정 게임의 타이머를 처리하고 페이즈를 전환한다.
+     *
+     * @param roomId 게임 ID
+     * @throws JsonProcessingException JSON 변환 오류 발생 시 예외 처리
+     */
     public void processTimers(long roomId) throws JsonProcessingException {
         Long remainingTime = gameSeqRepository.getTimer(roomId);
         GamePhase phaze = gameSeqRepository.getPhase(roomId);
@@ -92,10 +117,11 @@ public class GameScheduler {
     }
 
     /**
-     * 페이즈 전환
+     * 게임의 페이즈를 전환한다.
      *
-     * @param gameId 방 ID
+     * @param gameId 게임 ID
      * @throws BusinessException 유효하지 않은 페이즈일 경우 예외 발생
+     * @throws JsonProcessingException JSON 변환 오류 발생 시 예외 처리
      */
     public void advanceGamePhase(long gameId) throws JsonProcessingException {
         GamePhase curPhase = gameSeqRepository.getPhase(gameId);

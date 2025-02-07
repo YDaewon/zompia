@@ -14,6 +14,8 @@ import static com.mafia.global.common.model.dto.BaseResponseStatus.POLICE_CANNOT
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mafia.domain.game.event.GamePublisher;
+import com.mafia.domain.game.model.dto.GameEndEvent;
+import com.mafia.domain.game.model.dto.GameStartEvent;
 import com.mafia.domain.game.model.game.Game;
 import com.mafia.domain.game.model.game.GamePhase;
 import com.mafia.domain.game.model.game.Player;
@@ -32,6 +34,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 /**
@@ -48,8 +51,8 @@ public class GameService {
     private final VoiceService voiceService; // 🔥 OpenVidu 연동 추가
     private final GamePublisher gamePublisher; // Game Websocket
     private final GameSubscription subscription;
-    private final GameScheduler gameScheduler;
     private final ObjectMapper objectMapper;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     /**
      * 게임 조회
@@ -118,7 +121,7 @@ public class GameService {
 
 
         log.info("Game started in Room {}.", gameId);
-        gameScheduler.startGameScheduler(gameId);
+        applicationEventPublisher.publishEvent(new GameStartEvent(gameId));
     }
 
     private Game makeGame(long roomId) {
@@ -145,7 +148,7 @@ public class GameService {
         getPhase(gameId);
 
         // 게임 스레드 풀 반납
-        gameScheduler.stopGameScheduler(gameId);
+        applicationEventPublisher.publishEvent(new GameEndEvent(gameId));
 
         //Redis 채팅 채널 제거
         subscription.unsubscribe(gameId);
@@ -236,7 +239,7 @@ public class GameService {
 
     /**
      * 최종 찬반 투표 결과 반환
-     *
+     * -> GameScheduler로 옮기기
      * @param gameId 방 ID
      *
      */
