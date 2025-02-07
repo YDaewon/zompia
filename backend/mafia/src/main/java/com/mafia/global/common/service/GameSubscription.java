@@ -2,6 +2,7 @@ package com.mafia.global.common.service;
 
 import com.mafia.domain.chat.model.enumerate.ChatType;
 import com.mafia.domain.chat.service.ChatSubscriber;
+import com.mafia.domain.game.event.GameSubscriber;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +18,7 @@ public class GameSubscription implements Subscription{
 
     private final RedisMessageListenerContainer redisMessageListenerContainer;
     private final ChatSubscriber chatSubscriber;
+    private final GameSubscriber gameSubscriber;
     private final Map<String, ChannelTopic> activeTopics = new HashMap<>();
 
     /**
@@ -25,6 +27,7 @@ public class GameSubscription implements Subscription{
     @Override
     public void subscribe(Long gameId) {
         for (ChatType type : ChatType.values()) {
+            if(type == ChatType.ROOM) continue;
             String topicName = "game-" + gameId + "-" + type + "-chat";
             ChannelTopic topic = new ChannelTopic(topicName);
 
@@ -34,21 +37,37 @@ public class GameSubscription implements Subscription{
                 log.info("✅ Redis 게임 {} 채널 구독 시작: {}",type, topicName);
             }
         }
+        String topicName = "game-" + gameId + "-system";
+        ChannelTopic topic = new ChannelTopic(topicName);
+
+        if (!activeTopics.containsKey(topicName)) {
+            redisMessageListenerContainer.addMessageListener(gameSubscriber, topic);
+            activeTopics.put(topicName, topic);
+            log.info("✅ Redis 게임 System 채널 구독 시작: {}", topicName);
+        }
     }
 
     /**
-     * 🛑 Redis 구독 해제 (게임 종료 시)
+     * 🛑 Redis 구독 제거 (게임 종료 시)
      */
     @Override
     public void unsubscribe(Long gameId) {
         for (ChatType type : ChatType.values()) {
+            if(type == ChatType.ROOM) continue;
             String topicName = "game-" + gameId + "-" + type + "-chat";
             ChannelTopic topic = activeTopics.remove(topicName);
 
             if (topic != null) {
                 redisMessageListenerContainer.removeMessageListener(chatSubscriber, topic);
-                log.info("❌ Redis 게임 {} 채널 구독 해제: {}",type, topicName);
+                log.info("❌ Redis 게임 {} 채널 구독 제거: {}",type, topicName);
             }
+        }
+        String topicName = "game-" + gameId + "-system";
+        ChannelTopic topic = activeTopics.remove(topicName);
+
+        if (topic != null) {
+            redisMessageListenerContainer.removeMessageListener(gameSubscriber, topic);
+            log.info("❌ Redis 게임 System 채널 구독 제거: {}", topicName);
         }
     }
 }
