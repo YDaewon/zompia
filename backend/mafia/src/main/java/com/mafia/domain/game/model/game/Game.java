@@ -69,6 +69,13 @@ public class Game implements Serializable { // 필드정리
         this.setting = setting; // <- POST CONSTRUCT
     }
 
+    public void roundInit(){
+        votes.clear();
+        final_vote = 0;
+        healTarget = null;
+        killTarget = 0;
+    }
+
     /*
      * 플레이어 추가
      * - 게임에 참가할 플레이어를 추가한다.
@@ -169,9 +176,8 @@ public class Game implements Serializable { // 필드정리
         isGameOver();
     }
 
-    public List<Integer> processRoundResults() { // 밤중 킬
+    public List<Integer> killProcess() { // 밤중 킬
         if (killTarget == 0) {
-            healTarget = null;
             return null; // 죽일 대상이 없으면 바로 종료
         }
 
@@ -189,12 +195,7 @@ public class Game implements Serializable { // 필드정리
         // 실제 킬 처리
         for (Integer target : finalDeathList) {
             Kill(map_players.get(target));
-
         }
-
-        // 라운드가 끝나면 리스트 초기화
-        healTarget = null;
-        killTarget = 0;
 
         return finalDeathList;
     }
@@ -249,9 +250,6 @@ public class Game implements Serializable { // 필드정리
         }
     }
 
-    /**
-     * 페이즈별 음성 채팅 권한 관리
-     */
     public void updateVoicePermissions(String phase) {
         players.forEach((playerNo, player) -> {
             if (player.isDead()) {

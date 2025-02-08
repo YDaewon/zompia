@@ -35,6 +35,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
 /**
@@ -258,15 +259,18 @@ public class GameService {
 
 
     /**
-     * 플레이어 사망 처리
+     * 플레이어 사망 처리 - 테스트는 이렇게 냅두고
+     * 실 배포 시, param으로 Game객체만 사용 후 Scheduler에서만 이를 호출
+     * Controller 제거
      *
-     * @param gameId   방 ID
+     * @param gameId  방 ID가 있는 이벤트 객체
      * @return 사망 여부
      */
-    public boolean killPlayer(long gameId) throws JsonProcessingException {
+    @EventListener
+    public boolean killPlayer(Long gameId) throws JsonProcessingException {
         Game game = findById(gameId);
         Integer healedPlayer = game.getHealTarget();
-        List<Integer> killList = game.processRoundResults();
+        List<Integer> killList = game.killProcess();
 
         Map<String, String> message = new HashMap<>();
         //의사

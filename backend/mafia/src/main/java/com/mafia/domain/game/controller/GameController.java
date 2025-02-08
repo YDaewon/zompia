@@ -98,15 +98,15 @@ public class GameController {
         return ResponseEntity.ok(new BaseResponse<>("Vote skipped in Room " + roomId + "."));
     }
 
-    @GetMapping("/{roomId}/kill")
-    @Operation(summary = "Vote kill player", description = "타겟이 된 플레이어를 사망 처리합니다.")
-    public ResponseEntity<BaseResponse<String>> killVote(@PathVariable Long roomId)
+    @GetMapping("/{gameId}/kill")
+    @Operation(summary = "Vote kill player", description = "타겟이 된 플레이어를 사망 처리합니다.") // 테스트용
+    public ResponseEntity<BaseResponse<String>> killVote(@PathVariable Long gameId)
         throws JsonProcessingException {
-        boolean life = gameService.killPlayer(roomId);
+        boolean life = gameService.killPlayer(gameId);
         if (life) {
-            return ResponseEntity.ok(new BaseResponse<>("killed in Room " + roomId + "."));
+            return ResponseEntity.ok(new BaseResponse<>("killed in Room " + gameId + "."));
         } else {
-            return ResponseEntity.ok(new BaseResponse<>("saved in Room " + roomId + "."));
+            return ResponseEntity.ok(new BaseResponse<>("saved in Room " + gameId + "."));
         }
     }
 
