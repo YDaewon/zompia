@@ -45,6 +45,8 @@ public class GameService {
 
     private final RoomRedisService roomService;
     private final MemberService memberService;
+    // private final GameScheduler gameScheduler;
+    private final ApplicationEventPublisher applicationEventPublisher;
     private final GameRepository gameRepository; // 게임 데이터를 관리하는 리포지토리
     private final GameSeqRepository gameSeqRepository; // 게임 상태 및 시간 정보를 관리하는 리포지토리
     private final GameLogRepository gameLogRepository;
@@ -52,7 +54,7 @@ public class GameService {
     private final GamePublisher gamePublisher; // Game Websocket
     private final GameSubscription subscription;
     private final ObjectMapper objectMapper;
-    private final ApplicationEventPublisher applicationEventPublisher;
+
 
 
     /**

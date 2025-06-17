@@ -24,14 +24,17 @@ public class StompHandler implements ChannelInterceptor{
             MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
         if (accessor != null) {
             Principal principal = accessor.getUser();
-            // 만약 principal이 Authentication 토큰인 경우 내부의 principal을 확인합니다.
             if (principal instanceof UsernamePasswordAuthenticationToken token) {
                 Object userObj = token.getPrincipal();
                 if (userObj instanceof AuthenticatedUser user) {
                     //log.info("user Data" + user.getMemberDto().toString());
                     log.info("AuthenticatedUser memberId: {}", user.getMemberId());
                     // 여기서 AuthenticatedUser에서 필요한 값을 꺼내 StompPrincipal 생성
-                    //AuthenticatedUser principal = (AuthenticatedUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+                    // AuthenticatedUser principal = (AuthenticatedUser) SecurityContextHolder
+                    // .getContext()
+                    // .getAuthentication()
+                    // .getPrincipal();
+                    // accessor.setUser(principal);
                     StompPrincipal stompPrincipal =
                         new StompPrincipal(user.getMemberId());
                     accessor.setUser(stompPrincipal);

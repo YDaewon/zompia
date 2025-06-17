@@ -15,8 +15,8 @@ public class StompPrincipal implements Principal {
 
     @Override
     public String getName() {
-        // STOMP에서는 getName()을 사용자 식별용으로 사용합니다.
-        return String.valueOf(memberId); // 또는 원한다면 nickname 등 다른 값을 반환할 수 있음
+        // getName()을 사용자 식별용으로 사용
+        return String.valueOf(memberId);
     }
 
 }

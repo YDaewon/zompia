@@ -34,7 +34,6 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 @Slf4j
 public class GameScheduler {
-    // 애플리케이션이 실행 중인지 여부를 나타내는 플래그
     private volatile boolean running = true;
 
     private final GameSeqRepository gameSeqRepository;
@@ -121,7 +120,7 @@ public class GameScheduler {
         // Redis에서 게임 실행 정보 삭제
         gameSeqRepository.removeActiveGame(gameId);
         gameTimers.remove(gameId); // 내부 타이머 삭제
-        log.info("[GameScheduler] 게임 {}의 스케줄러가 종료되었습니다.", gameId);
+        log.info("[GameScheduler] 게임 {} 스케줄러 종료", gameId);
     }
 
     /**
